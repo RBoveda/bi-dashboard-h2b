@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BI Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Manrope:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      transition: background 0.4s, color 0.4s;
+    }
+
+    /* ══ SIDEBAR ══ */
+    .sidebar {
+      width: var(--nav-w);
+      min-width: var(--nav-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s cubic-bezier(0.4,0,0.2,1), min-width 0.3s cubic-bezier(0.4,0,0.2,1);
+      overflow: hidden;
+      position: relative;
+      z-index: 10;
+    }
+    .sidebar.collapsed { width: 68px; min-width: 68px; }
+
+    .sidebar-header {
+      padding: 22px 18px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 68px;
+    }
+    .logo-wrap {
+      width: 34px; height: 34px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-wrap img { width: 100%; height: 100%; object-fit: contain; }
+    .logo-wrap .logo-fallback {
+      width: 34px; height: 34px;
+      background: var(--accent-gradient);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; color: #fff;
+      font-family: 'DM Mono', monospace;
+    }
+    .logo-text {
+      font-size: 15px; font-weight: 700; letter-spacing: 0.01em;
+      white-space: nowrap; overflow: hidden;
+      transition: opacity 0.2s, width 0.2s;
+      color: var(--text);
+    }
+    .sidebar.collapsed .logo-text { opacity: 0; width: 0; }
+
+    .toggle-btn {
+      position: absolute; right: -12px; top: 22px;
+      width: 24px; height: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); font-size: 10px;
+      transition: background 0.2s, color 0.2s, transform 0.3s;
+      z-index: 20;
+    }
+    .toggle-btn:hover { background: var(--accent); color: #fff; }
+    .sidebar.collapsed .toggle-btn { transform: rotate(180deg); }
+
+    /* ══ NAV ══ */
+    nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+    nav::-webkit-scrollbar { width: 4px; }
+    nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .nav-section-label {
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      padding: 10px 8px 6px;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+    .sidebar.collapsed .nav-section-label { opacity: 0; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 10px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 14px; font-weight: 600;
+      transition: background 0.18s, color 0.18s;
+      white-space: nowrap; overflow: hidden;
+      position: relative; margin-bottom: 2px;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+    .nav-item.active::before {
+      content: '';
+      position: absolute; left: 0; top: 20%; bottom: 20%;
+      width: 3px; background: var(--accent);
+      border-radius: 0 2px 2px 0;
+    }
+    .nav-icon {
+      width: 34px; height: 34px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: var(--radius-sm); font-size: 17px;
+      background: var(--surface2);
+      transition: background 0.18s;
+    }
+    .nav-item.active .nav-icon { background: var(--accent-soft); }
+    .nav-label { transition: opacity 0.2s, width 0.2s; overflow: hidden; }
+    .sidebar.collapsed .nav-label { opacity: 0; width: 0; }
+    .badge {
+      margin-left: auto;
+      font-size: 10px; font-family: 'DM Mono', monospace;
+      background: var(--accent); color: #fff;
+      border-radius: 20px; padding: 1px 7px; flex-shrink: 0;
+    }
+    .sidebar.collapsed .badge { display: none; }
+
+    /* Tooltip colapsado */
+    .sidebar.collapsed .nav-item { position: relative; }
+    .sidebar.collapsed .nav-item:hover::after {
+      content: attr(data-label);
+      position: absolute; left: 58px; top: 50%; transform: translateY(-50%);
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); font-size: 12px; padding: 5px 10px;
+      border-radius: var(--radius-sm); white-space: nowrap; z-index: 100;
+      pointer-events: none;
+    }
+
+    .sidebar-footer { border-top: 1px solid var(--border); padding: 12px 10px; }
+
+    /* ══ MAIN ══ */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .topbar {
+      height: 68px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 28px; gap: 12px;
+    }
+    .topbar-title { font-size: 20px; font-weight: 800; flex: 1; }
+    .topbar-pill {
+      font-size: 11px; font-family: 'DM Mono', monospace;
+      color: var(--text-muted); background: var(--surface2);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 4px 10px;
+    }
+
+    /* ══ THEME SWITCHER ══ */
+    .theme-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); cursor: pointer;
+      color: var(--text-muted); font-size: 12px; font-weight: 600;
+      transition: all 0.2s;
+    }
+    .theme-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .theme-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+
+    /* ══ CONTENT ══ */
+    .content { flex: 1; overflow: auto; padding: 24px 28px; }
+
+    .dashboard-panel { display: none; flex-direction: column; gap: 20px; height: 100%; }
+    .dashboard-panel.active { display: flex; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px; position: relative; overflow: hidden;
+    }
+    .kpi-card::before {
+      content: ''; position: absolute; top: 0; right: 0;
+      width: 50px; height: 50px; border-radius: 0 var(--radius-lg) 0 50px;
+      background: var(--accent); opacity: 0.08;
+    }
+    .kpi-card.c2::before { background: var(--accent2); }
+    .kpi-card.c3::before { background: var(--accent3); }
+    .kpi-card.c4::before { background: var(--accent4); }
+    .kpi-label {
+      font-size: 10px; font-family: 'DM Mono', monospace;
+      color: var(--text-muted); letter-spacing: 0.1em;
+      text-transform: uppercase; margin-bottom: 10px;
+    }
+    .kpi-value { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+    .kpi-delta { font-size: 12px; font-weight: 600; color: var(--accent2); }
+    .kpi-delta.neg { color: #f87171; }
+
+    .embed-area {
+      flex: 1; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius-lg);
+      overflow: hidden; position: relative; min-height: 400px;
+    }
+    .embed-placeholder {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px;
+      color: var(--text-muted);
+    }
+    .embed-placeholder .icon { font-size: 48px; opacity: 0.25; }
+    .embed-placeholder h3 { font-size: 15px; font-weight: 700; color: var(--text); opacity: 0.5; }
+    .embed-placeholder p { font-size: 12px; font-family: 'DM Mono', monospace; text-align: center; max-width: 360px; line-height: 1.7; }
+    .embed-placeholder code {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 18px;
+      font-size: 11px; color: var(--accent); max-width: 440px; width: 100%;
+      text-align: left; line-height: 1.8; display: block;
+    }
+    .embed-area iframe { width: 100%; height: 100%; border: none; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+     🎨  CONFIGURACIÓN DE MARCA — EDITA AQUÍ
+     Cambia este objeto para adaptar a cada cliente
+     ════════════════════════════════════════════ -->
+<script>
+const BRAND = {
+  // ── Identidad ──────────────────────────────
+  companyName:  "Analytics Hub",
+  logoUrl:      "",          // Ruta a logo PNG/SVG. Si está vacío, usa iniciales
+  logoInitials: "BI",
+
+  // ── Tema base ──────────────────────────────
+  theme: "dark",             // "dark" | "light"
+
+  // ── Paleta de colores ──────────────────────
+  accent:  "#4f8ef7",        // Color principal (botones, activos, bordes)
+  accent2: "#38d9a9",        // KPI positivo / secundario
+  accent3: "#f79c4f",        // Terciario
+  accent4: "#a78bfa",        // Cuaternario
+
+  // ── Tipografía ─────────────────────────────
+  // Opciones: "Syne" | "Inter" | "Manrope" | "Plus Jakarta Sans"
+  fontBody: "Syne",
+
+  // ── Bordes ─────────────────────────────────
+  // "sharp" (0px) | "soft" (8px) | "round" (16px)
+  borderStyle: "soft",
+
+  // ── Módulos de navegación ──────────────────
+  navItems: [
+    { id: "ventas",     label: "Ventas",      icon: "📈", badge: "Live",
+      powerbiUrl: "" /* pega aquí tu URL de Power BI */ },
+    { id: "compras",    label: "Compras",     icon: "🛒", badge: "",
+      powerbiUrl: "" },
+    { id: "produccion", label: "Producción",  icon: "🏭", badge: "",
+      powerbiUrl: "" },
+    { id: "financiero", label: "Financiero",  icon: "💰", badge: "",
+      powerbiUrl: "" },
+  ],
+
+  // ── KPIs por dashboard ─────────────────────
+  kpis: {
+    ventas:     [
+      { label: "Ingresos Totales", value: "$4.2M",  delta: "▲ 12.4%", neg: false, c: "" },
+      { label: "Órdenes",         value: "3,847",   delta: "▲ 8.1%",  neg: false, c: "c2" },
+      { label: "Ticket Promedio", value: "$1,092",  delta: "▼ 2.3%",  neg: true,  c: "c3" },
+      { label: "Conversión",      value: "6.8%",    delta: "▲ 0.5 pp",neg: false, c: "c4" },
+    ],
+    compras:    [
+      { label: "Gasto Total",       value: "$1.8M", delta: "▼ 3.2%",  neg: true,  c: "" },
+      { label: "Órdenes de Compra", value: "1,203", delta: "▲ 5.7%",  neg: false, c: "c2" },
+      { label: "Proveedores",       value: "84",    delta: "▲ 2",     neg: false, c: "c3" },
+      { label: "Ahorro Negociado",  value: "$214K", delta: "▲ 18.0%", neg: false, c: "c4" },
+    ],
+    produccion: [
+      { label: "Unidades",    value: "28,430", delta: "▲ 7.9%",  neg: false, c: "" },
+      { label: "OEE",         value: "82.3%",  delta: "▲ 1.4 pp",neg: false, c: "c2" },
+      { label: "Paradas",     value: "4.2 h",  delta: "▼ mejor", neg: false, c: "c3" },
+      { label: "Defectos",    value: "0.31%",  delta: "▲ mejor", neg: false, c: "c4" },
+    ],
+    financiero: [
+      { label: "EBITDA",      value: "$890K", delta: "▲ 9.1%",  neg: false, c: "" },
+      { label: "Margen Neto", value: "21.2%", delta: "▲ 0.8 pp",neg: false, c: "c2" },
+      { label: "Deuda/EBITDA",value: "1.4x",  delta: "▼ mejor", neg: false, c: "c3" },
+      { label: "Liquidez",    value: "2.3",   delta: "▲ 0.2",   neg: false, c: "c4" },
+    ],
+  },
+};
+
+// ════════════════════════════════════════════
+//  🔧 ENGINE — No necesitas tocar esto
+// ════════════════════════════════════════════
+
+const THEMES = {
+  dark: {
+    bg: "#0d0f14", surface: "#13161e", surface2: "#1a1e2a", border: "#252a38",
+    text: "#e8eaf2", textMuted: "#6b7394",
+  },
+  light: {
+    bg: "#f4f6fb", surface: "#ffffff", surface2: "#eef1f8", border: "#dde2ef",
+    text: "#1a1e2a", textMuted: "#8892b0",
+  },
+};
+
+const RADIUS = { sharp: "0px", soft: "8px", round: "16px" };
+const RADIUS_SM = { sharp: "0px", soft: "6px", round: "10px" };
+const RADIUS_LG = { sharp: "0px", soft: "12px", round: "22px" };
+
+function applyTheme(themeName) {
+  const t = THEMES[themeName];
+  const r = RADIUS[BRAND.borderStyle];
+  const rs = RADIUS_SM[BRAND.borderStyle];
+  const rl = RADIUS_LG[BRAND.borderStyle];
+  const root = document.documentElement;
+
+  root.style.setProperty("--bg",        t.bg);
+  root.style.setProperty("--surface",   t.surface);
+  root.style.setProperty("--surface2",  t.surface2);
+  root.style.setProperty("--border",    t.border);
+  root.style.setProperty("--text",      t.text);
+  root.style.setProperty("--text-muted",t.textMuted);
+
+  root.style.setProperty("--accent",    BRAND.accent);
+  root.style.setProperty("--accent2",   BRAND.accent2);
+  root.style.setProperty("--accent3",   BRAND.accent3);
+  root.style.setProperty("--accent4",   BRAND.accent4);
+
+  // Soft version of accent for active bg
+  root.style.setProperty("--accent-soft", hexAlpha(BRAND.accent, 0.12));
+  root.style.setProperty("--accent-gradient", `linear-gradient(135deg, ${BRAND.accent}, ${BRAND.accent2})`);
+
+  root.style.setProperty("--nav-w",    "240px");
+  root.style.setProperty("--font-body", `"${BRAND.fontBody}", sans-serif`);
+  root.style.setProperty("--radius",    r);
+  root.style.setProperty("--radius-sm", rs);
+  root.style.setProperty("--radius-lg", rl);
+
+  document.title = BRAND.companyName + " — BI";
+}
+
+function hexAlpha(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// Build UI from BRAND config
+function buildUI() {
+  // Logo
+  const logoWrap = document.querySelector('.logo-wrap');
+  if (BRAND.logoUrl) {
+    logoWrap.innerHTML = `<img src="${BRAND.logoUrl}" alt="${BRAND.companyName}"/>`;
+  } else {
+    logoWrap.innerHTML = `<div class="logo-fallback">${BRAND.logoInitials}</div>`;
+  }
+  document.querySelector('.logo-text').textContent = BRAND.companyName;
+
+  // Nav items
+  const nav = document.getElementById('mainNav');
+  nav.innerHTML = `<div class="nav-section-label">Dashboards</div>`;
+  BRAND.navItems.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'nav-item' + (i === 0 ? ' active' : '');
+    div.dataset.panel = item.id;
+    div.dataset.label = item.label;
+    div.setAttribute('onclick', 'switchPanel(this)');
+    div.innerHTML = `
+      <div class="nav-icon">${item.icon}</div>
+      <span class="nav-label">${item.label}</span>
+      ${item.badge ? `<span class="badge">${item.badge}</span>` : ''}
+    `;
+    nav.appendChild(div);
+  });
+
+  // Panels
+  const content = document.getElementById('mainContent');
+  content.innerHTML = '';
+  BRAND.navItems.forEach((item, i) => {
+    const panel = document.createElement('div');
+    panel.className = 'dashboard-panel' + (i === 0 ? ' active' : '');
+    panel.id = 'panel-' + item.id;
+
+    // KPIs
+    const kpis = BRAND.kpis[item.id] || [];
+    const kpiHtml = kpis.map(k => `
+      <div class="kpi-card ${k.c}">
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value">${k.value}</div>
+        <div class="kpi-delta ${k.neg ? 'neg' : ''}">${k.delta}</div>
+      </div>
+    `).join('');
+
+    // Embed
+    const embedHtml = item.powerbiUrl
+      ? `<iframe src="${item.powerbiUrl}" allowfullscreen></iframe>`
+      : `<div class="embed-placeholder">
+          <div class="icon">${item.icon}</div>
+          <h3>Reporte de ${item.label} — Power BI</h3>
+          <p>Agrega la URL en <code>BRAND.navItems[].powerbiUrl</code></p>
+          <code>
+            &lt;iframe src="https://app.powerbi.com/reportEmbed<br>
+            &nbsp;&nbsp;?reportId=TU_ID&amp;groupId=TU_WORKSPACE" /&gt;
+          </code>
+        </div>`;
+
+    panel.innerHTML = `
+      <div class="kpi-row">${kpiHtml}</div>
+      <div class="embed-area">${embedHtml}</div>
+    `;
+    content.appendChild(panel);
+  });
+
+  // Current panel title
+  updateTopbar(BRAND.navItems[0]);
+}
+
+let currentTheme = BRAND.theme;
+
+function toggleTheme() {
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  applyTheme(currentTheme);
+  document.getElementById('themeLabel').textContent = currentTheme === 'dark' ? '☀ Claro' : '🌙 Oscuro';
+}
+
+function switchPanel(el) {
+  const panelId = el.dataset.panel;
+  if (!panelId) return;
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.dashboard-panel').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById('panel-' + panelId);
+  if (target) target.classList.add('active');
+  const item = BRAND.navItems.find(n => n.id === panelId);
+  if (item) updateTopbar(item);
+}
+
+function updateTopbar(item) {
+  document.getElementById('topbarTitle').textContent = item.label;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  applyTheme(BRAND.theme);
+  buildUI();
+
+  document.getElementById('toggleBtn').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+  });
+
+  // Date
+  const d = new Date();
+  document.getElementById('topbarDate').textContent =
+    d.toLocaleDateString('es-ES', {day:'2-digit', month:'short', year:'numeric'});
+
+  document.getElementById('themeLabel').textContent =
+    BRAND.theme === 'dark' ? '☀ Claro' : '🌙 Oscuro';
+});
+</script>
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-wrap"></div>
+    <span class="logo-text"></span>
+  </div>
+  <button class="toggle-btn" id="toggleBtn">&#9664;</button>
+  <nav id="mainNav"></nav>
+  <div class="sidebar-footer">
+    <div class="nav-item" data-panel="" data-label="Mi cuenta">
+      <div class="nav-icon">👤</div>
+      <span class="nav-label">Mi cuenta</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle"></div>
+    <span class="topbar-pill" id="topbarDate"></span>
+    <button class="theme-btn" onclick="toggleTheme()">
+      <span class="theme-dot"></span>
+      <span id="themeLabel">☀ Claro</span>
+    </button>
+    <span class="topbar-pill">Power BI Embedded</span>
+  </div>
+  <div class="content" id="mainContent"></div>
+</div>
+
+</body>
+</html>
