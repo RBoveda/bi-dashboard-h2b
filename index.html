@@ -208,6 +208,7 @@
     .panel{
       position:absolute;inset:0;
       display:none;flex-direction:column;
+      width:100%;height:100%;
     }
     .panel.active{display:flex;}
 
@@ -237,11 +238,12 @@
     /* Embed area */
     .embed-area{
       flex:1;margin:0;
-      background:var(--surface);
-      display:flex;align-items:center;justify-content:center;
-      flex-direction:column;gap:12px;overflow:hidden;position:relative;
+      background:var(--bg);
+      display:flex;align-items:stretch;justify-content:stretch;
+      overflow:hidden;position:relative;
+      width:100%;height:100%;
     }
-    .embed-area iframe{width:100%;height:100%;border:none;}
+    .embed-area iframe{width:100%;height:100%;border:none;display:block;}
     .embed-placeholder{text-align:center;color:var(--text-muted);}
     .embed-placeholder .icon{font-size:36px;margin-bottom:8px;}
     .embed-placeholder p{font-size:13px;margin-bottom:8px;}
@@ -600,9 +602,6 @@ function buildPanels() {
 
       const embed = document.createElement('div');
       embed.className = 'embed-area';
-      embed.style.margin = '0';
-      embed.style.borderRadius = '0';
-      embed.style.border = 'none';
 
       if (item.powerbiUrl) {
         embed.innerHTML = `<iframe src="${item.powerbiUrl}" allowfullscreen></iframe>`;
