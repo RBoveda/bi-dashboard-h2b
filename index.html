@@ -236,9 +236,8 @@
 
     /* Embed area */
     .embed-area{
-      flex:1;margin:0 20px 20px;
-      background:var(--surface);border:1px solid var(--border);
-      border-radius:var(--radius);
+      flex:1;margin:0;
+      background:var(--surface);
       display:flex;align-items:center;justify-content:center;
       flex-direction:column;gap:12px;overflow:hidden;position:relative;
     }
@@ -607,25 +606,11 @@ function buildPanels() {
       panel.className = 'panel';
       panel.id = 'panel-' + item.id;
 
-      const kpis = BRAND.kpis[item.id] || [];
-      const colors = ['var(--accent)','var(--accent2)','var(--accent3)','var(--accent4)'];
-
-      if (kpis.length > 0) {
-        const kpiRow = document.createElement('div');
-        kpiRow.className = 'kpi-row';
-        kpis.forEach((k, i) => {
-          kpiRow.innerHTML += `
-            <div class="kpi-card" style="--kpi-color:${colors[i%4]}">
-              <div class="kpi-label">${k.label}</div>
-              <div class="kpi-value">${k.value}</div>
-              <div class="kpi-delta ${k.neg ? 'neg' : 'pos'}">${k.delta}</div>
-            </div>`;
-        });
-        panel.appendChild(kpiRow);
-      }
-
       const embed = document.createElement('div');
       embed.className = 'embed-area';
+      embed.style.margin = '0';
+      embed.style.borderRadius = '0';
+      embed.style.border = 'none';
 
       if (item.powerbiUrl) {
         embed.innerHTML = `<iframe src="${item.powerbiUrl}" allowfullscreen></iframe>`;
